@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { query } from './config/database';
+import { chat } from './services/chatbot';
+import { getStravaAuthUrl, exchangeStravaCode, handleStravaWebhookChallenge } from './services/strava';
+import { connectGarmin, syncGarminActivities } from './services/garmin';
+import { ingestGarminActivity, ingestStravaActivity } from './services/activity-ingestor';
 
 dotenv.config();
 
@@ -25,17 +29,110 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
+// Auth routes
+app.get('/auth/strava', (req: Request, res: Response) => {
+  const authUrl = getStravaAuthUrl();
+  res.redirect(authUrl);
+});
+
+app.get('/auth/strava/callback', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).json({ error: 'Missing authorization code' });
+    }
+
+    const tokens = await exchangeStravaCode(code as string);
+
+    // In production, store tokens securely and associate with user
+    res.json({
+      message: 'Strava connected successfully',
+      expiresAt: tokens.expiresAt,
+    });
+  } catch (error) {
+    console.error('Strava auth error:', error);
+    res.status(500).json({ error: 'Failed to authenticate with Strava' });
+  }
+});
+
+// Connect Garmin (requires username/password in body)
+app.post('/auth/garmin', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Missing email or password' });
+    }
+
+    await connectGarmin({ email, password });
+    res.json({ message: 'Garmin connected successfully' });
+  } catch (error) {
+    console.error('Garmin auth error:', error);
+    res.status(500).json({ error: 'Failed to authenticate with Garmin' });
+  }
+});
+
 // Webhook routes
 app.post('/webhooks/garmin', async (req: Request, res: Response) => {
-  console.log('Garmin webhook received:', req.body);
-  // TODO: Implement Garmin webhook handler
-  res.json({ received: true });
+  try {
+    console.log('Garmin webhook received:', req.body);
+
+    // Validate webhook signature (Garmin-specific)
+    // TODO: Implement signature validation
+
+    const activity = req.body;
+    const userId = 'sample-user-id'; // TODO: Look up user from webhook metadata
+
+    const activityId = await ingestGarminActivity(userId, activity);
+    res.json({ received: true, activityId });
+  } catch (error) {
+    console.error('Garmin webhook error:', error);
+    res.status(500).json({ error: 'Failed to process Garmin webhook' });
+  }
 });
 
 app.post('/webhooks/strava', async (req: Request, res: Response) => {
-  console.log('Strava webhook received:', req.body);
-  // TODO: Implement Strava webhook handler
-  res.json({ received: true });
+  try {
+    const { 'hub.mode': hubMode, 'hub.verify.token': hubToken, 'hub.challenge': hubChallenge } = req.query;
+
+    // Handle subscription challenge
+    if (hubMode) {
+      const challenge = handleStravaWebhookChallenge(
+        hubMode as string,
+        hubToken as string,
+        hubChallenge as string,
+        'athletiq'
+      );
+
+      if (challenge) {
+        return res.send(challenge);
+      }
+      return res.status(403).send('Forbidden');
+    }
+
+    console.log('Strava webhook received:', req.body);
+
+    const event = req.body;
+    const userId = 'sample-user-id'; // TODO: Look up user from owner_id
+
+    // For 'create' events, we'd fetch the full activity from Strava API
+    // For now, acknowledge receipt
+    res.json({ received: true, eventId: event.object_id });
+  } catch (error) {
+    console.error('Strava webhook error:', error);
+    res.status(500).json({ error: 'Failed to process Strava webhook' });
+  }
+});
+
+// Manual sync endpoints
+app.post('/sync/garmin', async (req: Request, res: Response) => {
+  try {
+    const userId = 'sample-user-id'; // TODO: Get from auth
+    const count = await syncGarminActivities(userId);
+    res.json({ synced: count });
+  } catch (error) {
+    console.error('Garmin sync error:', error);
+    res.status(500).json({ error: 'Failed to sync Garmin activities' });
+  }
 });
 
 // API routes
@@ -152,10 +249,10 @@ app.get('/api/insights', async (req: Request, res: Response) => {
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const { message } = req.body;
-    // TODO: Implement chatbot with Anthropic
-    res.json({
-      response: 'Chatbot coming soon. Ask me about your training!'
-    });
+    const userId = 'sample-user-id'; // TODO: Get from auth
+
+    const response = await chat(userId, message);
+    res.json({ response });
   } catch (error) {
     console.error('Error processing chat:', error);
     res.status(500).json({ error: 'Failed to process chat' });
