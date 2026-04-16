@@ -13,6 +13,7 @@ import {
   ArrowDownRight,
   Minus
 } from 'lucide-react';
+import { StatCardSkeleton } from '@/components/ui/Skeleton';
 
 interface TodayData {
   date: string;
@@ -36,10 +37,35 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-400">Loading your data...</p>
+      <div className="space-y-8">
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
+            <div className="h-8 w-48 rounded-lg bg-gray-800 animate-pulse" />
+            <div className="h-4 w-32 rounded-lg bg-gray-800 animate-pulse" />
+          </div>
+          <div className="h-8 w-24 rounded-full bg-gray-800 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 animate-pulse">
+            <div className="h-4 w-32 bg-blue-500/30 rounded mb-3" />
+            <div className="h-6 w-24 bg-blue-500/30 rounded mb-2" />
+            <div className="h-4 w-20 bg-blue-500/30 rounded" />
+          </div>
+          <div className="p-5 rounded-2xl border border-gray-800 bg-gray-900/50 animate-pulse">
+            <div className="h-4 w-24 bg-gray-800 rounded mb-3" />
+            <div className="h-8 w-12 bg-gray-800 rounded mb-2" />
+            <div className="h-3 w-32 bg-gray-800 rounded" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-xl border border-gray-800 bg-gray-900/30 animate-pulse">
+              <div className="h-4 w-20 bg-gray-800 rounded mb-2" />
+              <div className="h-6 w-16 bg-gray-800 rounded" />
+            </div>
+          ))}
         </div>
       </div>
     );

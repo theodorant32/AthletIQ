@@ -1,15 +1,37 @@
 # AthletIQ
 
-Personal athletic intelligence platform that ingests Garmin/Strava data and generates adaptive training plans.
+Personal athletic intelligence platform that ingests Garmin/Strava data, computes fitness metrics, and generates adaptive training plans.
 
-## What It Does
+## Architecture
 
-- Syncs activities from Garmin Connect and Strava
-- Computes fitness metrics (CTL, ATL, TSB) using training load data
-- Predicts race times for half/full marathon
-- Detects overtraining risk from HRV and recovery data
-- Generates weekly training plans that adapt to your performance
-- Sends daily SMS recovery status and weekly email summaries
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Garmin/Strava │────▶│  API Gateway     │────▶│   Lambda        │
+│   (webhooks)    │     │  (REST)          │     │   (Node.js)     │
+└─────────────────┘     └──────────────────┘     └────────┬────────┘
+                                                          │
+                                                          ▼
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   SNS/SES       │◀────│   EventBridge    │◀────│   RDS           │
+│   (alerts)      │     │   (scheduled)    │     │   (PostgreSQL)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+         ▲
+         │
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Frontend      │◀────│   S3             │◀────│   ML Pipeline   │
+│   (Next.js)     │     │   (raw data)     │     │   (Python)      │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+```
+
+## Key Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Fitness Metrics | CTL/ATL/TSB via exponential moving averages |
+| Race Prediction | XGBoost regressor (half/full marathon) |
+| Overtraining Detection | Isolation Forest anomaly detection |
+| Training Plans | Phase-based periodization (Base→Build→Peak→Taper) |
+| Recovery Status | TSB + HRV-based daily readiness |
 
 ## Quick Start
 
@@ -18,36 +40,50 @@ Personal athletic intelligence platform that ingests Garmin/Strava data and gene
 docker-compose up -d
 
 # Install dependencies
-cd backend && npm install
-cd ../frontend && npm install
+npm install --prefix backend && npm install --prefix frontend
 
 # Run migrations
-cd backend && npm run db:migrate
+npm run db:migrate --prefix backend
 
 # Start dev servers
-cd backend && npm run dev  # http://localhost:4000
-cd ../frontend && npm run dev  # http://localhost:3001
+npm run dev --prefix backend & npm run dev --prefix frontend
 ```
 
-## Stack
+Visit `http://localhost:3001`
 
-- **Backend:** Node.js + TypeScript (Express)
-- **Frontend:** Next.js 14 + TailwindCSS
-- **ML:** Python (XGBoost, scikit-learn)
-- **Database:** PostgreSQL (AWS RDS)
-- **Cloud:** AWS Lambda, API Gateway, S3, EventBridge, SNS, SES
-- **IaC:** AWS CDK
+## API Endpoints
 
-## AWS Deployment
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/today` | Today's recovery + workout |
+| GET | `/api/metrics?days=30` | Historical CTL/ATL/TSB |
+| GET | `/api/plan` | Current week's training plan |
+| POST | `/api/chat` | AI coach conversation |
+| GET | `/api/insights` | Generated insights |
+| POST | `/webhooks/strava` | Strava activity updates |
+
+## AWS Infrastructure
+
+Deployed via CDK (Free Tier optimized):
+
+- **Lambda**: 128MB, 30s timeout
+- **RDS**: db.t3.micro, 20GB storage
+- **API Gateway**: HTTP API (cheaper than REST)
+- **S3**: Intelligent-Tiering for raw activity data
 
 ```bash
 cd infrastructure
-npm install
-npx cdk bootstrap
 npx cdk deploy
 ```
 
-Runs on AWS free tier for 12 months.
+## Tech Stack
+
+- **Frontend**: Next.js 14 App Router, TailwindCSS, TanStack Query
+- **Backend**: Node.js, TypeScript, Express, pg
+- **ML**: Python, XGBoost, scikit-learn
+- **Database**: PostgreSQL 15
+- **Cloud**: AWS Lambda, RDS, S3, EventBridge, SNS, SES
+- **IaC**: AWS CDK (TypeScript)
 
 ## License
 
