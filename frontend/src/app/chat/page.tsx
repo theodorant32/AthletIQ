@@ -91,17 +91,17 @@ export default function ChatPage() {
                   }`}
                 >
                   <div className={`p-2.5 rounded-xl ${
-                    msg.role === 'user' ? 'bg-blue-500/10' : 'bg-purple-500/10'
+                    msg.role === 'user' ? 'bg-sky-500/10' : 'bg-purple-500/10'
                   }`}>
                     {msg.role === 'user' ? (
-                      <User className="w-5 h-5 text-blue-400" />
+                      <User className="w-5 h-5 text-sky-400" />
                     ) : (
                       <Bot className="w-5 h-5 text-purple-400" />
                     )}
                   </div>
                   <div className={`max-w-[75%] p-4 rounded-2xl ${
                     msg.role === 'user'
-                      ? 'bg-blue-500/10 border border-blue-500/30'
+                      ? 'bg-sky-500/10 border border-sky-500/30'
                       : 'bg-gray-800 border border-gray-700'
                   }`}>
                     <p className="text-gray-100 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -133,12 +133,12 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask about your training..."
-              className="flex-1 px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+              className="flex-1 px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="px-5 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium transition flex items-center gap-2"
+              className="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium transition flex items-center gap-2"
             >
               <Send className="w-5 h-5" />
             </button>

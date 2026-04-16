@@ -43,8 +43,8 @@ export default function SettingsPage() {
         {/* Profile Section */}
         <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <User className="w-5 h-5 text-blue-400" />
+            <div className="p-2 rounded-lg bg-sky-500/10">
+              <User className="w-5 h-5 text-sky-400" />
             </div>
             <h2 className="text-lg font-medium text-white">Profile</h2>
           </div>
@@ -53,7 +53,7 @@ export default function SettingsPage() {
               <label className="block text-sm text-gray-400 mb-1.5">Weight (kg)</label>
               <input
                 type="number"
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
                 placeholder="75"
               />
             </div>
@@ -61,7 +61,7 @@ export default function SettingsPage() {
               <label className="block text-sm text-gray-400 mb-1.5">Resting HR (bpm)</label>
               <input
                 type="number"
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
                 placeholder="55"
               />
             </div>
@@ -69,11 +69,11 @@ export default function SettingsPage() {
               <label className="block text-sm text-gray-400 mb-1.5">Max HR (bpm)</label>
               <input
                 type="number"
-                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
                 placeholder="190"
               />
             </div>
-            <button className="w-full px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
+            <button className="w-full px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium transition">
               Save Profile
             </button>
           </div>
@@ -112,7 +112,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-blue-400 font-bold text-sm">G</span>
+                  <span className="text-sky-400 font-bold text-sm">G</span>
                 </div>
                 <div>
                   <h3 className="font-medium text-white">Garmin</h3>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
               />
               <button
                 onClick={handleGarminConnect}
-                className="w-full px-4 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition"
+                className="w-full px-4 py-2.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium transition"
               >
                 Connect
               </button>
@@ -193,7 +193,7 @@ export default function SettingsPage() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="+1 (555) 123-4567"
-              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
             />
             <p className="text-xs text-gray-500 mt-2">
               Daily recovery status each morning
@@ -206,7 +206,7 @@ export default function SettingsPage() {
               value={emailAddress}
               onChange={(e) => setEmailAddress(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition"
             />
             <p className="text-xs text-gray-500 mt-2">
               Weekly training summary every Sunday
@@ -214,7 +214,7 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="mt-6">
-          <button className="px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
+          <button className="px-6 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium transition">
             Save Preferences
           </button>
         </div>

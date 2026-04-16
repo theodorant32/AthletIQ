@@ -32,7 +32,7 @@ export function CardHeader({ icon, title, description, action }: CardHeaderProps
     <div className="flex items-start justify-between mb-6">
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="p-2 rounded-lg bg-blue-500/10">
+          <div className="p-2 rounded-lg bg-sky-500/10">
             {icon}
           </div>
         )}

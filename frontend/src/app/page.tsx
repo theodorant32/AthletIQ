@@ -49,9 +49,9 @@ export default function HomePage() {
           <StatCardSkeleton />
           <StatCardSkeleton />
           <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 animate-pulse">
-            <div className="h-4 w-32 bg-blue-500/30 rounded mb-3" />
-            <div className="h-6 w-24 bg-blue-500/30 rounded mb-2" />
-            <div className="h-4 w-20 bg-blue-500/30 rounded" />
+            <div className="h-4 w-32 bg-sky-500/30 rounded mb-3" />
+            <div className="h-6 w-24 bg-sky-500/30 rounded mb-2" />
+            <div className="h-4 w-20 bg-sky-500/30 rounded" />
           </div>
           <div className="p-5 rounded-2xl border border-gray-800 bg-gray-900/50 animate-pulse">
             <div className="h-4 w-24 bg-gray-800 rounded mb-3" />
@@ -112,7 +112,7 @@ export default function HomePage() {
         />
 
         {/* Today's Workout Card */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 text-white">
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-5 h-5 text-blue-200" />
             <span className="text-sm font-medium text-blue-100">Today's Workout</span>
@@ -200,7 +200,7 @@ interface StatCardProps {
 
 function StatCard({ title, value, trend, trendDirection = 'neutral', icon: Icon, color, description }: StatCardProps) {
   const colors = {
-    blue: { bg: 'bg-blue-500/10', icon: 'text-blue-400' },
+    blue: { bg: 'bg-sky-500/10', icon: 'text-sky-400' },
     purple: { bg: 'bg-purple-500/10', icon: 'text-purple-400' },
     green: { bg: 'bg-green-500/10', icon: 'text-green-400' },
     orange: { bg: 'bg-orange-500/10', icon: 'text-orange-400' },

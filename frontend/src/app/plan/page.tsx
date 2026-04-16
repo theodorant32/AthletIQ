@@ -47,7 +47,7 @@ const workoutLabels: Record<string, string> = {
 };
 
 const workoutColors: Record<string, string> = {
-  long_run: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+  long_run: 'bg-blue-500/20 text-sky-400 border-sky-500/50',
   tempo: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
   intervals: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
   recovery: 'bg-green-500/20 text-green-400 border-green-500/50',
@@ -71,7 +71,7 @@ export default function PlanPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
       </div>
     );
   }
@@ -99,8 +99,8 @@ export default function PlanPage() {
       {/* Weekly Overview */}
       <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-blue-500/10">
-            <Calendar className="w-5 h-5 text-blue-400" />
+          <div className="p-2 rounded-lg bg-sky-500/10">
+            <Calendar className="w-5 h-5 text-sky-400" />
           </div>
           <h2 className="text-lg font-medium text-white">This Week</h2>
         </div>
@@ -114,13 +114,13 @@ export default function PlanPage() {
               <div
                 key={dateStr}
                 className={`p-3 rounded-xl text-center ${
-                  isToday ? 'bg-blue-500/20 ring-1 ring-blue-500/50' : 'bg-gray-800/50'
+                  isToday ? 'bg-sky-500/20 ring-1 ring-sky-500/50' : 'bg-gray-800/50'
                 }`}
               >
                 <p className="text-xs text-gray-400 mb-1">
                   {format(date, 'EEE')}
                 </p>
-                <p className={`text-lg font-bold mb-2 ${isToday ? 'text-blue-400' : 'text-white'}`}>
+                <p className={`text-lg font-bold mb-2 ${isToday ? 'text-sky-400' : 'text-white'}`}>
                   {format(date, 'd')}
                 </p>
                 {dayWorkout ? (

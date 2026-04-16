@@ -28,7 +28,7 @@ export default function ProgressPage() {
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function ProgressPage() {
       <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
+            <div className="p-2 rounded-lg bg-sky-500/10">
               <TrendingUp className="w-5 h-5 text-blue-400" />
             </div>
             <div>
@@ -88,8 +88,8 @@ export default function ProgressPage() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="ctlGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
@@ -118,7 +118,7 @@ export default function ProgressPage() {
               <Area
                 type="monotone"
                 dataKey="ctl"
-                stroke="#3B82F6"
+                stroke="#0EA5E9"
                 strokeWidth={2}
                 fill="url(#ctlGradient)"
                 name="CTL (Fitness)"

@@ -23,7 +23,7 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center">
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-white">AthletIQ</span>
@@ -42,7 +42,7 @@ export function Navigation() {
                   href={item.href}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
                     isActive
-                      ? 'bg-blue-500/10 text-blue-400'
+                      ? 'bg-sky-500/10 text-sky-400'
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                   }`}
                 >
@@ -78,7 +78,7 @@ export function Navigation() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`px-3 py-3 rounded-lg text-sm font-medium transition flex items-center gap-3 ${
                     isActive
-                      ? 'bg-blue-500/10 text-blue-400'
+                      ? 'bg-sky-500/10 text-sky-400'
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                   }`}
                 >
