@@ -11,17 +11,6 @@ Personal athletic intelligence platform that ingests Garmin/Strava data and gene
 - Generates weekly training plans that adapt to your performance
 - Sends daily SMS recovery status and weekly email summaries
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Backend | Node.js + TypeScript (Express) |
-| Frontend | Next.js 14 + TailwindCSS |
-| ML | Python (XGBoost, scikit-learn) |
-| Database | PostgreSQL (AWS RDS) |
-| Cloud | AWS Lambda, API Gateway, S3, EventBridge, SNS, SES |
-| IaC | AWS CDK |
-
 ## Quick Start
 
 ```bash
@@ -31,29 +20,23 @@ docker-compose up -d
 # Install dependencies
 cd backend && npm install
 cd ../frontend && npm install
-cd ../ml-pipeline && pip install -r requirements.txt
 
 # Run migrations
-cd ../backend && npm run db:migrate
+cd backend && npm run db:migrate
 
 # Start dev servers
-cd .. && npm run dev  # backend
-cd frontend && npm run dev  # frontend
+cd backend && npm run dev  # http://localhost:4000
+cd ../frontend && npm run dev  # http://localhost:3001
 ```
 
-Backend: http://localhost:4000  
-Frontend: http://localhost:3001
+## Stack
 
-## Project Structure
-
-```
-athletiq/
-├── backend/        # Express API, webhooks, data ingestion
-├── frontend/       # Next.js dashboard
-├── ml-pipeline/    # Python ML models
-├── infrastructure/ # AWS CDK stacks
-└── scripts/        # Setup and utility scripts
-```
+- **Backend:** Node.js + TypeScript (Express)
+- **Frontend:** Next.js 14 + TailwindCSS
+- **ML:** Python (XGBoost, scikit-learn)
+- **Database:** PostgreSQL (AWS RDS)
+- **Cloud:** AWS Lambda, API Gateway, S3, EventBridge, SNS, SES
+- **IaC:** AWS CDK
 
 ## AWS Deployment
 
@@ -64,7 +47,7 @@ npx cdk bootstrap
 npx cdk deploy
 ```
 
-Runs on AWS free tier for 12 months (~$20-50/month after).
+Runs on AWS free tier for 12 months.
 
 ## License
 

@@ -1,55 +1,70 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const pool = new Pool({
+interface DatabaseConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+  max: number;
+  idleTimeoutMillis: number;
+  connectionTimeoutMillis: number;
+}
+
+const config: DatabaseConfig = {
   host: process.env.DATABASE_HOST || 'localhost',
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  port: parseInt(process.env.DATABASE_PORT || '5432', 10),
   database: process.env.DATABASE_NAME || 'athletiq',
   user: process.env.DATABASE_USER || 'postgres',
   password: process.env.DATABASE_PASSWORD || 'postgres',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-});
+};
+
+const pool = new Pool(config);
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
 });
 
-export async function query<T = any>(
+/**
+ * Execute a parameterized SQL query
+ */
+export async function executeQuery<T = any>(
   text: string,
-  params?: any[]
-): Promise<{ rows: T[]; rowCount: number | null }> {
+  params?: unknown[]
+): Promise<QueryResult<T>> {
   const start = Date.now();
   try {
-    const res = await pool.query(text, params);
+    const result = await pool.query<T>(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
-    return { rows: res.rows, rowCount: res.rowCount };
+    console.log('[DB] Executed query', { text: text.split('\n')[0].trim(), duration: `${duration}ms`, rows: result.rowCount });
+    return result;
   } catch (error) {
-    console.error('Database query error', { text, error });
+    console.error('[DB] Query error', { text: text.split('\n')[0].trim(), error });
     throw error;
   }
 }
 
-export async function getClient(): Promise<PoolClient> {
-  const client = await pool.connect();
-  const originalQuery = client.query.bind(client);
-  const originalRelease = client.release.bind(client);
-
-  client.release = () => {
-    originalRelease();
-  };
-
-  return client;
+/**
+ * Get a database client from the pool for transactions
+ */
+export async function acquireClient(): Promise<PoolClient> {
+  return pool.connect();
 }
 
-export async function transaction<T>(
+/**
+ * Execute a database transaction
+ * Automatically rolls back on error
+ */
+export async function runTransaction<T>(
   fn: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  const client = await getClient();
+  const client = await acquireClient();
   try {
     await client.query('BEGIN');
     const result = await fn(client);

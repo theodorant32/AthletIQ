@@ -6,27 +6,39 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const region = process.env.AWS_REGION || 'us-east-1';
+const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 
-// Use credential chain for local dev ( ~/.aws/credentials ) and AWS runtime
+// Credential chain: environment -> SSO -> instance profile
 const credentials = fromNodeProviderChain();
 
-export const s3Client = new S3Client({
-  region,
+const s3Client = new S3Client({
+  region: AWS_REGION,
   credentials,
 });
 
-export const snsClient = new SNSClient({
-  region,
+const snsClient = new SNSClient({
+  region: AWS_REGION,
   credentials,
 });
 
-export const sesClient = new SESClient({
-  region,
+const sesClient = new SESClient({
+  region: AWS_REGION,
   credentials,
 });
 
-export const RAW_DATA_BUCKET = process.env.S3_RAW_DATA_BUCKET || 'athletiq-raw-data';
-export const MODELS_BUCKET = process.env.S3_MODELS_BUCKET || 'athletiq-models';
-export const SNS_TOPIC_ARN = process.env.AWS_SNS_TOPIC_ARN || '';
-export const SES_FROM_EMAIL = process.env.AWS_SES_FROM_EMAIL || '';
+export {
+  s3Client,
+  snsClient,
+  sesClient,
+  AWS_REGION,
+};
+
+export const BUCKETS = {
+  RAW_DATA: process.env.S3_RAW_DATA_BUCKET || 'athletiq-raw-data',
+  MODELS: process.env.S3_MODELS_BUCKET || 'athletiq-models',
+} as const;
+
+export const ALERTS = {
+  SNS_TOPIC_ARN: process.env.AWS_SNS_TOPIC_ARN || '',
+  SES_FROM_EMAIL: process.env.AWS_SES_FROM_EMAIL || '',
+} as const;

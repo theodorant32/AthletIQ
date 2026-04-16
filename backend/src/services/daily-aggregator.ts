@@ -1,4 +1,4 @@
-import { query, transaction } from '../config/database';
+import { runTransaction, executeQuery } from '../config/database';
 
 interface DailyAggregation {
   user_id: string;
@@ -10,85 +10,22 @@ interface DailyAggregation {
  * - CTL (Chronic Training Load): 42-day exponential moving average
  * - ATL (Acute Training Load): 7-day exponential moving average
  * - TSB (Training Stress Balance): CTL - ATL
- * - Recovery status based on TSB and HRV
  */
 export async function computeDailyMetrics({ user_id, date }: DailyAggregation): Promise<void> {
-  await transaction(async (client) => {
-    // Get all activities for the date
-    const activitiesQuery = await client.query(`
+  await runTransaction(async (client) => {
+    const activitiesResult = await client.query(`
       SELECT * FROM activities
-      WHERE user_id = $1
-      AND DATE(start_time) = $2
+      WHERE user_id = $1 AND DATE(start_time) = $2
     `, [user_id, date]);
 
-    const activities = activitiesQuery.rows;
+    const activities = activitiesResult.rows;
 
-    // Basic aggregations
-    const totalActivities = activities.length;
-    const totalDistance = activities.reduce((sum, a) => sum + (parseInt(a.distance_meters) || 0), 0);
-    const totalDuration = activities.reduce((sum, a) => sum + (parseInt(a.duration_seconds) || 0), 0);
-    const totalElevation = activities.reduce((sum, a) => sum + (parseInt(a.elevation_gain_meters) || 0), 0);
-    const totalCalories = activities.reduce((sum, a) => sum + (parseInt(a.calories) || 0), 0);
-    const trainingLoadSum = activities.reduce((sum, a) => sum + (parseInt(a.training_load) || 0), 0);
-    const aerobicEffectSum = activities.reduce((sum, a) => sum + (parseInt(a.aerobic_effect) || 0), 0);
-    const anaerobicEffectSum = activities.reduce((sum, a) => sum + (parseInt(a.anaerobic_effect) || 0), 0);
-
-    // Heart rate averages
-    const hrActivities = activities.filter(a => a.avg_heart_rate);
-    const avgHR = hrActivities.length > 0
-      ? Math.round(hrActivities.reduce((sum, a) => sum + parseInt(a.avg_heart_rate), 0) / hrActivities.length)
-      : null;
-
-    const maxHR = activities.length > 0
-      ? Math.max(...activities.map(a => parseInt(a.max_heart_rate) || 0))
-      : null;
-
-    // HRV average
-    const hrvActivities = activities.filter(a => a.hrv_average);
-    const hrvAvg = hrvActivities.length > 0
-      ? hrvActivities.reduce((sum, a) => sum + parseFloat(a.hrv_average), 0) / hrvActivities.length
-      : null;
-
-    const hrvStatus = activities.find(a => a.hrv_status)?.hrv_status || null;
-
-    // Calculate CTL and ATL using exponential moving average
-    const ctlResult = await client.query(`
-      SELECT
-        training_load,
-        DATE(start_time) as activity_date
-      FROM activities
-      WHERE user_id = $1
-      AND start_time >= NOW() - INTERVAL '42 days'
-      AND start_time < $2::date + INTERVAL '1 day'
-      ORDER BY start_time DESC
-    `, [user_id, date]);
-
-    const ctl = calculateEMA(ctlResult.rows.map(r => r.training_load || 0), 42);
-    const atl = calculateEMA(ctlResult.rows.map(r => r.training_load || 0), 7);
+    const aggregates = calculateAggregates(activities);
+    const ctl = await calculateCTL(client, user_id, date);
+    const atl = await calculateATL(client, user_id, date);
     const tsb = ctl !== null && atl !== null ? ctl - atl : null;
+    const recoveryStatus = determineRecoveryStatus(tsb, aggregates.hrvStatus);
 
-    // Determine recovery status
-    const recoveryStatus = determineRecoveryStatus(tsb, hrvStatus);
-
-    // Get sleep data from most recent activity with sleep info
-    const sleepActivity = activities.find(a => a.sleep_score) || await client.query(`
-      SELECT sleep_score FROM activities
-      WHERE user_id = $1
-      AND sleep_score IS NOT NULL
-      ORDER BY start_time DESC
-      LIMIT 1
-    `, [user_id]).then(r => r.rows[0]);
-
-    const sleepScore = sleepActivity?.sleep_score || null;
-    const sleepHours = sleepActivity ? null : null; // Would need separate sleep data source
-
-    // Get resting HR from user profile or recent activities
-    const restingHRResult = await client.query(`
-      SELECT resting_heart_rate FROM user_profile WHERE id = $1
-    `, [user_id]);
-    const restingHR = restingHRResult.rows[0]?.resting_heart_rate || null;
-
-    // Upsert daily metrics
     await client.query(`
       INSERT INTO daily_metrics (
         user_id, date, total_activities, total_distance_meters,
@@ -96,9 +33,9 @@ export async function computeDailyMetrics({ user_id, date }: DailyAggregation): 
         avg_heart_rate, max_heart_rate, ctl_score, atl_score, tsb_score,
         hrv_average, hrv_status, resting_heart_rate, sleep_score,
         recovery_status, training_load_sum, aerobic_effect_sum, anaerobic_effect_sum,
-        created_at, updated_at
+        updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW()
       )
       ON CONFLICT (user_id, date) DO UPDATE SET
         total_activities = $3,
@@ -120,19 +57,98 @@ export async function computeDailyMetrics({ user_id, date }: DailyAggregation): 
         anaerobic_effect_sum = $20,
         updated_at = NOW()
     `, [
-      user_id, date, totalActivities, totalDistance, totalDuration,
-      totalElevation, totalCalories, avgHR, maxHR, ctl, atl, tsb,
-      hrvAvg, hrvStatus, restingHR, sleepScore, recoveryStatus,
-      trainingLoadSum, aerobicEffectSum, anaerobicEffectSum
+      user_id, date, aggregates.totalActivities, aggregates.totalDistance,
+      aggregates.totalDuration, aggregates.totalElevation, aggregates.totalCalories,
+      aggregates.avgHR, aggregates.maxHR, ctl, atl, tsb,
+      aggregates.hrvAvg, aggregates.hrvStatus, aggregates.restingHR, aggregates.sleepScore,
+      recoveryStatus, aggregates.trainingLoadSum, aggregates.aerobicEffectSum,
+      aggregates.anaerobicEffectSum,
     ]);
   });
 }
 
-/**
- * Calculate Exponential Moving Average
- * @param values Array of values (most recent first)
- * @param period EMA period
- */
+function calculateAggregates(activities: any[]) {
+  const totalActivities = activities.length;
+  const totalDistance = activities.reduce((sum, a) => sum + (parseInt(a.distance_meters) || 0), 0);
+  const totalDuration = activities.reduce((sum, a) => sum + (parseInt(a.duration_seconds) || 0), 0);
+  const totalElevation = activities.reduce((sum, a) => sum + (parseInt(a.elevation_gain_meters) || 0), 0);
+  const totalCalories = activities.reduce((sum, a) => sum + (parseInt(a.calories) || 0), 0);
+  const trainingLoadSum = activities.reduce((sum, a) => sum + (parseInt(a.training_load) || 0), 0);
+  const aerobicEffectSum = activities.reduce((sum, a) => sum + (parseInt(a.aerobic_effect) || 0), 0);
+  const anaerobicEffectSum = activities.reduce((sum, a) => sum + (parseInt(a.anaerobic_effect) || 0), 0);
+
+  const hrActivities = activities.filter(a => a.avg_heart_rate);
+  const avgHR = hrActivities.length > 0
+    ? Math.round(hrActivities.reduce((sum, a) => sum + parseInt(a.avg_heart_rate), 0) / hrActivities.length)
+    : null;
+
+  const maxHR = activities.length > 0
+    ? Math.max(...activities.map(a => parseInt(a.max_heart_rate) || 0))
+    : null;
+
+  const hrvActivities = activities.filter(a => a.hrv_average);
+  const hrvAvg = hrvActivities.length > 0
+    ? hrvActivities.reduce((sum, a) => sum + parseFloat(a.hrv_average), 0) / hrvActivities.length
+    : null;
+
+  const hrvStatus = activities.find(a => a.hrv_status)?.hrv_status || null;
+  const sleepScore = activities.find(a => a.sleep_score)?.sleep_score || null;
+  const restingHR = null; // Would come from user profile
+
+  return {
+    totalActivities,
+    totalDistance,
+    totalDuration,
+    totalElevation,
+    totalCalories,
+    trainingLoadSum,
+    aerobicEffectSum,
+    anaerobicEffectSum,
+    avgHR,
+    maxHR,
+    hrvAvg,
+    hrvStatus,
+    sleepScore,
+    restingHR,
+  };
+}
+
+async function calculateCTL(
+  client: any,
+  userId: string,
+  date: string
+): Promise<number | null> {
+  const result = await client.query(`
+    SELECT training_load
+    FROM activities
+    WHERE user_id = $1
+      AND start_time >= $2::date - INTERVAL '42 days'
+      AND start_time < $2::date + INTERVAL '1 day'
+    ORDER BY start_time DESC
+  `, [userId, date]);
+
+  const loads = result.rows.map((r: any) => r.training_load || 0);
+  return calculateEMA(loads, 42);
+}
+
+async function calculateATL(
+  client: any,
+  userId: string,
+  date: string
+): Promise<number | null> {
+  const result = await client.query(`
+    SELECT training_load
+    FROM activities
+    WHERE user_id = $1
+      AND start_time >= $2::date - INTERVAL '7 days'
+      AND start_time < $2::date + INTERVAL '1 day'
+    ORDER BY start_time DESC
+  `, [userId, date]);
+
+  const loads = result.rows.map((r: any) => r.training_load || 0);
+  return calculateEMA(loads, 7);
+}
+
 function calculateEMA(values: number[], period: number): number | null {
   if (values.length === 0) return null;
 
@@ -146,37 +162,24 @@ function calculateEMA(values: number[], period: number): number | null {
   return Math.round(ema * 100) / 100;
 }
 
-/**
- * Determine recovery status based on TSB and HRV
- */
 function determineRecoveryStatus(tsb: number | null, hrvStatus: string | null): string {
   if (tsb === null) return 'unknown';
-
-  // TSB interpretation (based on training peaks methodology)
-  // TSB > 25: Very fresh (possibly detrained)
-  // TSB 0 to 25: Fresh (good for racing)
-  // TSB -10 to 0: Neutral (normal training)
-  // TSB -20 to -10: Fatigued (building fitness)
-  // TSB < -20: Very fatigued (overtraining risk)
-
   if (tsb < -20) return 'red';
   if (tsb < -10) return 'yellow';
-  if (hrvStatus === 'poor') return 'yellow';
-  if (hrvStatus === 'unbalanced') return 'yellow';
+  if (hrvStatus === 'poor' || hrvStatus === 'unbalanced') return 'yellow';
   return 'green';
 }
 
-/**
- * Backfill daily metrics for a date range
- */
-export async function backfillDailyMetrics(userId: string, startDate: string, endDate: string): Promise<void> {
-  const start = new Date(startDate);
+export async function backfillDailyMetrics(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<void> {
+  const current = new Date(startDate);
   const end = new Date(endDate);
-  const current = new Date(start);
 
   while (current <= end) {
     const dateStr = current.toISOString().split('T')[0];
-    console.log(`Computing daily metrics for ${dateStr}`);
     await computeDailyMetrics({ user_id: userId, date: dateStr });
     current.setDate(current.getDate() + 1);
   }

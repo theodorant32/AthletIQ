@@ -2,9 +2,14 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { query } from './config/database';
+
+import { executeQuery } from './config/database';
 import { chat } from './services/chatbot';
-import { getStravaAuthUrl, exchangeStravaCode, handleStravaWebhookChallenge } from './services/strava';
+import {
+  getStravaAuthUrl,
+  exchangeStravaCode,
+  handleStravaWebhookChallenge,
+} from './services/strava';
 import { connectGarmin, syncGarminActivities } from './services/garmin';
 import { ingestGarminActivity, ingestStravaActivity } from './services/activity-ingestor';
 
@@ -19,18 +24,26 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
-app.get('/health', async (req: Request, res: Response) => {
+// Health check endpoint
+app.get('/health', async (_req: Request, res: Response) => {
   try {
-    await query('SELECT 1');
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    await executeQuery('SELECT 1');
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
   } catch (error) {
-    res.status(500).json({ status: 'unhealthy', error: 'Database connection failed' });
+    res.status(500).json({
+      status: 'unhealthy',
+      error: 'Database connection failed',
+    });
   }
 });
 
-// Auth routes
-app.get('/auth/strava', (req: Request, res: Response) => {
+// ==================== Authentication ====================
+
+app.get('/auth/strava', (_req: Request, res: Response) => {
   const authUrl = getStravaAuthUrl();
   res.redirect(authUrl);
 });
@@ -38,16 +51,17 @@ app.get('/auth/strava', (req: Request, res: Response) => {
 app.get('/auth/strava/callback', async (req: Request, res: Response) => {
   try {
     const { code } = req.query;
-    if (!code) {
+
+    if (!code || typeof code !== 'string') {
       return res.status(400).json({ error: 'Missing authorization code' });
     }
 
-    const tokens = await exchangeStravaCode(code as string);
+    const tokens = await exchangeStravaCode(code);
 
-    // In production, store tokens securely and associate with user
+    // TODO: Store tokens in user_profile and associate with authenticated user
     res.json({
       message: 'Strava connected successfully',
-      expiresAt: tokens.expiresAt,
+      expiresAt: tokens.expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Strava auth error:', error);
@@ -55,10 +69,10 @@ app.get('/auth/strava/callback', async (req: Request, res: Response) => {
   }
 });
 
-// Connect Garmin (requires username/password in body)
 app.post('/auth/garmin', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Missing email or password' });
     }
@@ -71,16 +85,19 @@ app.post('/auth/garmin', async (req: Request, res: Response) => {
   }
 });
 
-// Webhook routes
+// ==================== Webhooks ====================
+
 app.post('/webhooks/garmin', async (req: Request, res: Response) => {
   try {
-    console.log('Garmin webhook received:', req.body);
+    console.log('Garmin webhook received');
 
-    // Validate webhook signature (Garmin-specific)
-    // TODO: Implement signature validation
-
+    // TODO: Implement Garmin signature validation
     const activity = req.body;
-    const userId = 'sample-user-id'; // TODO: Look up user from webhook metadata
+    const userId = await resolveUserId('garmin', activity.summary?.ownerId);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not found for this Garmin account' });
+    }
 
     const activityId = await ingestGarminActivity(userId, activity);
     res.json({ received: true, activityId });
@@ -94,13 +111,13 @@ app.post('/webhooks/strava', async (req: Request, res: Response) => {
   try {
     const { 'hub.mode': hubMode, 'hub.verify.token': hubToken, 'hub.challenge': hubChallenge } = req.query;
 
-    // Handle subscription challenge
-    if (hubMode) {
+    // Handle Strava subscription challenge
+    if (hubMode && typeof hubMode === 'string') {
       const challenge = handleStravaWebhookChallenge(
-        hubMode as string,
-        hubToken as string,
-        hubChallenge as string,
-        'athletiq'
+        hubMode,
+        (hubToken as string) || '',
+        (hubChallenge as string) || '',
+        process.env.STRAVA_VERIFY_TOKEN || 'athletiq'
       );
 
       if (challenge) {
@@ -109,13 +126,16 @@ app.post('/webhooks/strava', async (req: Request, res: Response) => {
       return res.status(403).send('Forbidden');
     }
 
-    console.log('Strava webhook received:', req.body);
+    const event = req.body as Record<string, unknown>;
+    const userId = await resolveUserId('strava', String(event.owner_id));
 
-    const event = req.body;
-    const userId = 'sample-user-id'; // TODO: Look up user from owner_id
+    if (!userId) {
+      return res.status(401).json({ error: 'User not found for this Strava account' });
+    }
 
-    // For 'create' events, we'd fetch the full activity from Strava API
-    // For now, acknowledge receipt
+    // TODO: Fetch full activity data from Strava API for 'create' events
+    console.log('Strava webhook received:', { type: event.object_type, id: event.object_id });
+
     res.json({ received: true, eventId: event.object_id });
   } catch (error) {
     console.error('Strava webhook error:', error);
@@ -123,10 +143,11 @@ app.post('/webhooks/strava', async (req: Request, res: Response) => {
   }
 });
 
-// Manual sync endpoints
+// ==================== Sync Endpoints ====================
+
 app.post('/sync/garmin', async (req: Request, res: Response) => {
   try {
-    const userId = 'sample-user-id'; // TODO: Get from auth
+    const userId = await requireAuth(req);
     const count = await syncGarminActivities(userId);
     res.json({ synced: count });
   } catch (error) {
@@ -135,23 +156,25 @@ app.post('/sync/garmin', async (req: Request, res: Response) => {
   }
 });
 
-// API routes
-app.get('/api/today', async (req: Request, res: Response) => {
+// ==================== Data API ====================
+
+app.get('/api/today', async (_req: Request, res: Response) => {
   try {
-    // Get today's workout and recovery status
     const today = new Date().toISOString().split('T')[0];
 
-    const [dailyMetrics, trainingPlan] = await Promise.all([
-      query(`
-        SELECT * FROM daily_metrics
+    const [metricsResult, planResult] = await Promise.all([
+      executeQuery(`
+        SELECT date, recovery_status, ctl_score, atl_score, tsb_score
+        FROM daily_metrics
         WHERE date = $1
         ORDER BY created_at DESC
         LIMIT 1
       `, [today]),
-      query(`
+
+      executeQuery(`
         SELECT * FROM training_plan
         WHERE scheduled_date = $1
-        AND status = 'scheduled'
+          AND status = 'scheduled'
         ORDER BY
           CASE workout_type
             WHEN 'long_run' THEN 1
@@ -161,15 +184,16 @@ app.get('/api/today', async (req: Request, res: Response) => {
             WHEN 'rest' THEN 5
           END
         LIMIT 1
-      `, [today])
+      `, [today]),
     ]);
 
     res.json({
       date: today,
-      recovery: dailyMetrics.rows[0]?.recovery_status || 'unknown',
-      ctl: dailyMetrics.rows[0]?.ctl_score || null,
-      tsb: dailyMetrics.rows[0]?.tsb_score || null,
-      workout: trainingPlan.rows[0] || null,
+      recovery: metricsResult.rows[0]?.recovery_status || 'unknown',
+      ctl: metricsResult.rows[0]?.ctl_score || null,
+      atl: metricsResult.rows[0]?.atl_score || null,
+      tsb: metricsResult.rows[0]?.tsb_score || null,
+      workout: planResult.rows[0] || null,
     });
   } catch (error) {
     console.error('Error fetching today data:', error);
@@ -179,8 +203,14 @@ app.get('/api/today', async (req: Request, res: Response) => {
 
 app.get('/api/metrics', async (req: Request, res: Response) => {
   try {
-    const { days = '30' } = req.query;
-    const result = await query(`
+    const daysParam = req.query.days || '30';
+    const days = parseInt(daysParam as string, 10);
+
+    if (isNaN(days) || days < 1 || days > 365) {
+      return res.status(400).json({ error: 'Days must be between 1 and 365' });
+    }
+
+    const result = await executeQuery(`
       SELECT
         date,
         ctl_score,
@@ -190,7 +220,7 @@ app.get('/api/metrics', async (req: Request, res: Response) => {
         avg_heart_rate,
         recovery_status
       FROM daily_metrics
-      WHERE date >= NOW() - INTERVAL '${parseInt(days as string)} days'
+      WHERE date >= NOW() - INTERVAL '${days} days'
       ORDER BY date ASC
     `);
 
@@ -203,18 +233,9 @@ app.get('/api/metrics', async (req: Request, res: Response) => {
 
 app.get('/api/plan', async (req: Request, res: Response) => {
   try {
-    const { week } = req.query;
-    let weekStart = week as string;
+    let weekStart = (req.query.week as string) || getCurrentWeekStart();
 
-    if (!weekStart) {
-      // Get current week's Monday
-      const now = new Date();
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      weekStart = new Date(now.setDate(diff)).toISOString().split('T')[0];
-    }
-
-    const result = await query(`
+    const result = await executeQuery(`
       SELECT * FROM training_plan
       WHERE week_start_date = $1
       ORDER BY scheduled_date
@@ -222,7 +243,7 @@ app.get('/api/plan', async (req: Request, res: Response) => {
 
     res.json({
       weekStart,
-      workouts: result.rows
+      workouts: result.rows,
     });
   } catch (error) {
     console.error('Error fetching plan:', error);
@@ -230,9 +251,9 @@ app.get('/api/plan', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/insights', async (req: Request, res: Response) => {
+app.get('/api/insights', async (_req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const result = await executeQuery(`
       SELECT * FROM insights
       WHERE is_read = false
       ORDER BY created_at DESC
@@ -249,9 +270,14 @@ app.get('/api/insights', async (req: Request, res: Response) => {
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     const { message } = req.body;
-    const userId = 'sample-user-id'; // TODO: Get from auth
 
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const userId = await resolveUserIdFromSession(req);
     const response = await chat(userId, message);
+
     res.json({ response });
   } catch (error) {
     console.error('Error processing chat:', error);
@@ -259,23 +285,64 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   }
 });
 
-// Error handling
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+// ==================== Error Handling ====================
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
+
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 
-// 404 handler
-app.use((req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// ==================== Server Startup ====================
+
 app.listen(PORT, () => {
-  console.log(`🏃 AthletIQ backend running on port ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
+  console.log(`AthletIQ backend running on port ${PORT}`);
+  console.log(`  Health: http://localhost:${PORT}/health`);
 });
+
+// ==================== Helper Functions ====================
+
+/**
+ * Resolve user ID from external provider ID
+ */
+async function resolveUserId(source: 'garmin' | 'strava', externalId: string): Promise<string | null> {
+  // TODO: Implement proper user lookup from user_profile
+  // For now, return a placeholder
+  console.log('Resolving user for', { source, externalId });
+  return 'sample-user-id';
+}
+
+/**
+ * Get current week start (Monday)
+ */
+function getCurrentWeekStart(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(now.setDate(diff)).toISOString().split('T')[0];
+}
+
+/**
+ * Placeholder for authentication middleware
+ */
+async function requireAuth(_req: Request): Promise<string> {
+  // TODO: Implement JWT-based authentication
+  return 'sample-user-id';
+}
+
+/**
+ * Placeholder for session-based user resolution
+ */
+async function resolveUserIdFromSession(_req: Request): Promise<string> {
+  // TODO: Implement session-based auth
+  return 'sample-user-id';
+}
 
 export default app;
