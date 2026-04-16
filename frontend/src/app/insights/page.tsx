@@ -57,18 +57,20 @@ export default function InsightsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-white">Insights</h1>
-      <p className="text-gray-400">
-        AI-generated insights from your training data
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-white">Insights</h1>
+        <p className="text-gray-400 mt-1">AI-generated insights from your training data</p>
+      </div>
 
       {(!insights?.insights || insights.insights.length === 0) ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Lightbulb className="w-16 h-16 text-gray-600 mb-4" />
-          <p className="text-gray-400">No insights yet</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Sync some activities to get personalized insights
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+          <div className="p-4 rounded-2xl bg-yellow-500/10 mb-4">
+            <Lightbulb className="w-10 h-10 text-yellow-400" />
+          </div>
+          <p className="text-lg font-medium text-white mb-2">No insights yet</p>
+          <p className="text-sm text-gray-400 max-w-sm">
+            Complete some workouts and we'll start generating personalized insights about your training
           </p>
         </div>
       ) : (
@@ -76,19 +78,23 @@ export default function InsightsPage() {
           {insights.insights.map((insight) => (
             <div
               key={insight.id}
-              className={`p-6 rounded-xl border ${getSeverityColor(insight.severity || '')}`}
+              className={`p-5 rounded-2xl border ${getSeverityColor(insight.severity || '')}`}
             >
               <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-gray-800/50">
+                <div className={`p-2.5 rounded-xl ${
+                  insight.insight_type === 'performance' ? 'bg-green-500/10' :
+                  insight.insight_type === 'recovery' ? 'bg-yellow-500/10' :
+                  'bg-blue-500/10'
+                }`}>
                   {getIcon(insight.insight_type)}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-white">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h3 className="text-base font-semibold text-white">
                       {insight.title}
                     </h3>
                     {insight.severity && (
-                      <span className={`px-2 py-1 rounded text-xs font-medium uppercase ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide ${
                         insight.severity === 'high' ? 'bg-red-500/20 text-red-400' :
                         insight.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-blue-500/20 text-blue-400'
@@ -98,10 +104,10 @@ export default function InsightsPage() {
                     )}
                   </div>
                   {insight.description && (
-                    <p className="text-gray-400 mb-3">{insight.description}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-3">{insight.description}</p>
                   )}
-                  <p className="text-sm text-gray-500">
-                    {format(new Date(insight.created_at), 'MMM d, yyyy')}
+                  <p className="text-xs text-gray-500">
+                    {format(new Date(insight.created_at), 'MMMM d, yyyy')}
                   </p>
                 </div>
               </div>

@@ -88,21 +88,23 @@ export default function PlanPage() {
   const weekDates = generateWeekDates(weekStart);
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">Training Plan</h1>
-        <p className="text-gray-400">
-          Week of {format(weekStart, 'MMM d, yyyy')}
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-white">Training Plan</h1>
+        <p className="text-gray-400 mt-1">
+          Week of {format(weekStart, 'MMMM d, yyyy')}
         </p>
       </div>
 
       {/* Weekly Overview */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <div className="flex items-center gap-3 mb-4">
-          <Calendar className="w-6 h-6 text-blue-400" />
-          <h2 className="text-lg font-semibold">This Week</h2>
+      <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg bg-blue-500/10">
+            <Calendar className="w-5 h-5 text-blue-400" />
+          </div>
+          <h2 className="text-lg font-medium text-white">This Week</h2>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-3">
           {weekDates.map((date) => {
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayWorkout = plan?.workouts?.find(w => w.scheduled_date === dateStr);
@@ -111,22 +113,24 @@ export default function PlanPage() {
             return (
               <div
                 key={dateStr}
-                className={`p-3 rounded-lg text-center ${
-                  isToday ? 'bg-blue-500/20 border border-blue-500' : 'bg-gray-800/50'
+                className={`p-3 rounded-xl text-center ${
+                  isToday ? 'bg-blue-500/20 ring-1 ring-blue-500/50' : 'bg-gray-800/50'
                 }`}
               >
                 <p className="text-xs text-gray-400 mb-1">
                   {format(date, 'EEE')}
                 </p>
-                <p className="text-lg font-bold mb-2">{format(date, 'd')}</p>
+                <p className={`text-lg font-bold mb-2 ${isToday ? 'text-blue-400' : 'text-white'}`}>
+                  {format(date, 'd')}
+                </p>
                 {dayWorkout ? (
-                  <div className="space-y-1">
-                    <div className={`w-3 h-3 rounded-full mx-auto ${
+                  <div className="space-y-1.5">
+                    <div className={`w-2.5 h-2.5 rounded-full mx-auto ${
                       dayWorkout.status === 'completed' ? 'bg-green-500' :
                       dayWorkout.status === 'skipped' ? 'bg-red-500' : 'bg-gray-500'
                     }`} />
-                    <p className="text-xs text-gray-300">
-                      {workoutLabels[dayWorkout.workout_type] || dayWorkout.workout_type}
+                    <p className="text-xs text-gray-300 leading-tight">
+                      {workoutLabels[dayWorkout.workout_type]?.split(' ')[0] || dayWorkout.workout_type.split('_')[0]}
                     </p>
                     {dayWorkout.target_distance_meters && (
                       <p className="text-xs text-gray-500">
@@ -145,7 +149,7 @@ export default function PlanPage() {
 
       {/* Detailed Workout List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Daily Workouts</h2>
+        <h2 className="text-lg font-medium text-white">Daily Workouts</h2>
         {plan?.workouts?.map((workout) => {
           const isExpanded = expandedWorkout === workout.id;
           const paceRange = formatPaceRange(
@@ -156,62 +160,60 @@ export default function PlanPage() {
           return (
             <div
               key={workout.id}
-              className={`rounded-xl border overflow-hidden transition-all ${
+              className={`rounded-2xl border overflow-hidden transition-all ${
                 workout.status === 'completed' ? 'border-green-500/30 bg-green-500/5' :
                 workout.status === 'skipped' ? 'border-red-500/30 bg-red-500/5' :
                 'border-gray-800 bg-gray-900/50'
               }`}
             >
-              {/* Header - always visible */}
               <div
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-800/30"
+                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-800/30"
                 onClick={() => setExpandedWorkout(isExpanded ? null : workout.id)}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg ${
-                    workout.status === 'completed' ? 'bg-green-500/20' :
-                    workout.status === 'skipped' ? 'bg-red-500/20' : 'bg-gray-500/20'
+                  <div className={`p-2.5 rounded-xl ${
+                    workout.status === 'completed' ? 'bg-green-500/10' :
+                    workout.status === 'skipped' ? 'bg-red-500/10' : 'bg-gray-500/10'
                   }`}>
                     {workout.status === 'completed' && <CheckCircle className="w-5 h-5 text-green-400" />}
                     {workout.status === 'skipped' && <XCircle className="w-5 h-5 text-red-400" />}
                     {workout.status === 'scheduled' && <Circle className="w-5 h-5 text-gray-400" />}
                   </div>
-                  <div>
-                    <p className="font-medium text-white">
-                      {format(new Date(workout.scheduled_date), 'EEEE, MMM d')}
+                  <div className="flex-1">
+                    <p className="font-medium text-white mb-1.5">
+                      {format(new Date(workout.scheduled_date), 'EEEE, MMMM d')}
                     </p>
-                    <div className="flex items-center gap-3 text-sm text-gray-400">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${workoutColors[workout.workout_type] || 'bg-gray-500/20 text-gray-400 border-gray-500/50'}`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${workoutColors[workout.workout_type] || 'bg-gray-500/20 text-gray-400 border-gray-500/50'}`}>
                         {workoutLabels[workout.workout_type] || workout.workout_type}
                       </span>
                       {workout.target_distance_meters && (
-                        <span>{(workout.target_distance_meters / 1000).toFixed(1)} km</span>
+                        <span className="text-sm text-gray-400">{(workout.target_distance_meters / 1000).toFixed(1)} km</span>
                       )}
-                      {paceRange && <span>{paceRange}</span>}
-                      {workout.target_hr_zone && <span>HR Zone {workout.target_hr_zone}</span>}
+                      {paceRange && <span className="text-sm text-gray-400">{paceRange}</span>}
+                      {workout.target_hr_zone && <span className="text-sm text-gray-400">HR Zone {workout.target_hr_zone}</span>}
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
                   {workout.instructions && (
-                    isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />
+                    <div className="text-gray-500">
+                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Expanded details */}
               {isExpanded && workout.instructions && (
-                <div className="px-4 pb-4 border-t border-gray-800">
-                  <div className="mt-4 space-y-3">
+                <div className="px-5 pb-5 border-t border-gray-800">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {workout.purpose && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-300 mb-1">Purpose</p>
-                        <p className="text-sm text-gray-400">{workout.purpose}</p>
+                      <div className="p-4 rounded-xl bg-gray-800/50">
+                        <p className="text-xs font-medium text-gray-300 uppercase tracking-wide mb-2">Purpose</p>
+                        <p className="text-sm text-gray-400 leading-relaxed">{workout.purpose}</p>
                       </div>
                     )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-300 mb-1">Instructions</p>
-                      <p className="text-sm text-gray-400">{workout.instructions}</p>
+                    <div className="p-4 rounded-xl bg-gray-800/50">
+                      <p className="text-xs font-medium text-gray-300 uppercase tracking-wide mb-2">Instructions</p>
+                      <p className="text-sm text-gray-400 leading-relaxed">{workout.instructions}</p>
                     </div>
                   </div>
                 </div>
@@ -220,7 +222,12 @@ export default function PlanPage() {
           );
         })}
         {(!plan?.workouts || plan.workouts.length === 0) && (
-          <p className="text-gray-400 text-center py-8">No workouts scheduled for this week</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 rounded-2xl bg-gray-800/50 mb-4">
+              <Calendar className="w-10 h-10 text-gray-500" />
+            </div>
+            <p className="text-gray-400">No workouts scheduled for this week</p>
+          </div>
         )}
       </div>
     </div>

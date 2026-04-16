@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Link as LinkIcon, Bell, Database } from 'lucide-react';
+import { User, Link as LinkIcon, Bell, Database, Target } from 'lucide-react';
 
 export default function SettingsPage() {
   const [garminEmail, setGarminEmail] = useState('');
@@ -33,66 +33,93 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-white">Settings</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-white">Settings</h1>
+        <p className="text-gray-400 mt-1">Manage your profile, data sources, and preferences</p>
+      </div>
 
-      {/* Profile Section */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <div className="flex items-center gap-3 mb-4">
-          <User className="w-6 h-6 text-blue-400" />
-          <h2 className="text-lg font-semibold">Profile</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile Section */}
+        <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <User className="w-5 h-5 text-blue-400" />
+            </div>
+            <h2 className="text-lg font-medium text-white">Profile</h2>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Weight (kg)</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                placeholder="75"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Resting HR (bpm)</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                placeholder="55"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Max HR (bpm)</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
+                placeholder="190"
+              />
+            </div>
+            <button className="w-full px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
+              Save Profile
+            </button>
+          </div>
         </div>
-        <div className="space-y-4 max-w-md">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Weight (kg)</label>
-            <input
-              type="number"
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500"
-              placeholder="75"
-            />
+
+        {/* Race Goals */}
+        <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <Target className="w-5 h-5 text-green-400" />
+              </div>
+              <h2 className="text-lg font-medium text-white">Race Goals</h2>
+            </div>
+            <button className="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition">
+              Add Goal
+            </button>
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Resting HR (bpm)</label>
-            <input
-              type="number"
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500"
-              placeholder="55"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Max HR (bpm)</label>
-            <input
-              type="number"
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-blue-500"
-              placeholder="190"
-            />
-          </div>
-          <button className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
-            Save Profile
-          </button>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Set your target races to get personalized predictions and training plans tailored to your event.
+          </p>
         </div>
       </div>
 
       {/* Data Sources */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <div className="flex items-center gap-3 mb-4">
-          <Database className="w-6 h-6 text-green-400" />
-          <h2 className="text-lg font-semibold">Data Sources</h2>
+      <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg bg-green-500/10">
+            <Database className="w-5 h-5 text-green-400" />
+          </div>
+          <h2 className="text-lg font-medium text-white">Data Sources</h2>
         </div>
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Garmin */}
-          <div className="p-4 rounded-lg bg-gray-800/50">
+          <div className="p-5 rounded-xl bg-gray-800/50 border border-gray-700/50">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-blue-400 font-bold">G</span>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <span className="text-blue-400 font-bold text-sm">G</span>
                 </div>
                 <div>
-                  <h3 className="font-medium text-white">Garmin Connect</h3>
-                  <p className="text-sm text-gray-400">Auto-sync activities from your Vivoactive</p>
+                  <h3 className="font-medium text-white">Garmin</h3>
+                  <p className="text-xs text-gray-400">Vivoactive sync</p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
                 Not Connected
               </span>
             </div>
@@ -102,114 +129,105 @@ export default function SettingsPage() {
                 value={garminEmail}
                 onChange={(e) => setGarminEmail(e.target.value)}
                 placeholder="Garmin email"
-                className="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
               <input
                 type="password"
                 value={garminPassword}
                 onChange={(e) => setGarminPassword(e.target.value)}
-                placeholder="Garmin password"
-                className="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Password"
+                className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
               <button
                 onClick={handleGarminConnect}
-                className="w-full px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition"
+                className="w-full px-4 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition"
               >
-                Connect Garmin
+                Connect
               </button>
-              <p className="text-xs text-gray-500">
-                Note: Uses unofficial API. Your credentials are stored securely.
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Uses unofficial API. Credentials stored securely.
               </p>
             </div>
           </div>
 
           {/* Strava */}
-          <div className="p-4 rounded-lg bg-gray-800/50">
+          <div className="p-5 rounded-xl bg-gray-800/50 border border-gray-700/50">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                  <span className="text-orange-400 font-bold">S</span>
+                <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <span className="text-orange-400 font-bold text-sm">S</span>
                 </div>
                 <div>
                   <h3 className="font-medium text-white">Strava</h3>
-                  <p className="text-sm text-gray-400">Sync activities and segments</p>
+                  <p className="text-xs text-gray-400">Activities & segments</p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
                 Not Connected
               </span>
             </div>
             <button
               onClick={handleStravaConnect}
-              className="w-full px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition flex items-center justify-center gap-2"
             >
               <LinkIcon className="w-4 h-4" />
-              Connect Strava
+              Connect
             </button>
           </div>
         </div>
       </div>
 
-      {/* Alerts */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <div className="flex items-center gap-3 mb-4">
-          <Bell className="w-6 h-6 text-yellow-400" />
-          <h2 className="text-lg font-semibold">Alerts & Notifications</h2>
+      {/* Alerts & Notifications */}
+      <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg bg-yellow-500/10">
+            <Bell className="w-5 h-5 text-yellow-400" />
+          </div>
+          <h2 className="text-lg font-medium text-white">Alerts & Notifications</h2>
         </div>
-        <div className="space-y-4 max-w-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Phone Number (SMS)</label>
+            <label className="block text-sm text-gray-400 mb-1.5">Phone Number (SMS)</label>
             <input
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="+1 (555) 123-4567"
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-2">
               Daily recovery status each morning
             </p>
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email Address</label>
+            <label className="block text-sm text-gray-400 mb-1.5">Email Address</label>
             <input
               type="email"
               value={emailAddress}
               onChange={(e) => setEmailAddress(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-2">
               Weekly training summary every Sunday
             </p>
           </div>
-          <button className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
-            Save Alert Preferences
+        </div>
+        <div className="mt-6">
+          <button className="px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium transition">
+            Save Preferences
           </button>
         </div>
-      </div>
-
-      {/* Race Goals */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Race Goals</h2>
-          <button className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-medium transition">
-            Add Goal
-          </button>
-        </div>
-        <p className="text-gray-400 text-sm">
-          Set your target races to get personalized predictions and training plans.
-        </p>
       </div>
 
       {/* Data Management */}
-      <div className="p-6 rounded-xl border border-gray-800 bg-gray-900/50">
-        <h2 className="text-lg font-semibold mb-4">Data Management</h2>
-        <div className="space-y-3">
-          <button className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium transition">
+      <div className="p-6 rounded-2xl border border-gray-800 bg-gray-900/50">
+        <h2 className="text-lg font-medium text-white mb-4">Data Management</h2>
+        <div className="flex gap-3">
+          <button className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-medium transition">
             Export All Data
           </button>
-          <button className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium transition">
+          <button className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-medium transition">
             Re-sync Activities
           </button>
         </div>
