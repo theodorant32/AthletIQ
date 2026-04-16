@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, CheckCircle, Circle, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Circle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Workout {
@@ -13,6 +14,7 @@ interface Workout {
   target_pace_max_sec_per_km: number | null;
   target_hr_zone: number | null;
   purpose: string | null;
+  instructions: string | null;
   status: 'scheduled' | 'completed' | 'skipped';
 }
 
@@ -21,11 +23,47 @@ interface PlanResponse {
   workouts: Workout[];
 }
 
+function formatPace(secPerKm: number): string {
+  const min = Math.floor(secPerKm / 60);
+  const sec = Math.round(secPerKm % 60);
+  return `${min}:${sec.toString().padStart(2, '0')}/km`;
+}
+
+function formatPaceRange(min: number | null, max: number | null): string {
+  if (!min || !max) return '';
+  const minPace = formatPace(min);
+  const maxPace = formatPace(max);
+  return minPace === maxPace ? minPace : `${minPace} - ${maxPace}`;
+}
+
+const workoutLabels: Record<string, string> = {
+  long_run: 'Long Run',
+  tempo: 'Tempo Run',
+  intervals: 'Intervals',
+  recovery: 'Recovery Run',
+  rest: 'Rest Day',
+  cross_train: 'Cross Training',
+  strength: 'Strength',
+};
+
+const workoutColors: Record<string, string> = {
+  long_run: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+  tempo: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
+  intervals: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+  recovery: 'bg-green-500/20 text-green-400 border-green-500/50',
+  rest: 'bg-gray-500/20 text-gray-400 border-gray-500/50',
+  cross_train: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50',
+  strength: 'bg-red-500/20 text-red-400 border-red-500/50',
+};
+
 export default function PlanPage() {
-  const { data: plan, isLoading } = useQuery<PlanResponse>({
+  const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
+
+  const { data: plan, isLoading, error } = useQuery<PlanResponse>({
     queryKey: ['plan'],
     queryFn: async () => {
       const res = await fetch('http://localhost:4000/api/plan');
+      if (!res.ok) throw new Error('Failed to fetch plan');
       return res.json();
     },
   });
@@ -38,24 +76,16 @@ export default function PlanPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-red-400">
+        Failed to load training plan. Is the backend running?
+      </div>
+    );
+  }
+
   const weekStart = plan?.weekStart ? new Date(plan.weekStart) : new Date();
   const weekDates = generateWeekDates(weekStart);
-
-  const workoutTypeLabels: Record<string, string> = {
-    long_run: 'Long Run',
-    tempo: 'Tempo',
-    intervals: 'Intervals',
-    recovery: 'Recovery',
-    rest: 'Rest',
-    cross_train: 'Cross Train',
-    strength: 'Strength',
-  };
-
-  const statusIcons = {
-    scheduled: <Circle className="w-5 h-5 text-gray-400" />,
-    completed: <CheckCircle className="w-5 h-5 text-green-400" />,
-    skipped: <XCircle className="w-5 h-5 text-red-400" />,
-  };
 
   return (
     <div className="space-y-8">
@@ -73,7 +103,7 @@ export default function PlanPage() {
           <h2 className="text-lg font-semibold">This Week</h2>
         </div>
         <div className="grid grid-cols-7 gap-2">
-          {weekDates.map((date, i) => {
+          {weekDates.map((date) => {
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayWorkout = plan?.workouts?.find(w => w.scheduled_date === dateStr);
             const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -91,9 +121,12 @@ export default function PlanPage() {
                 <p className="text-lg font-bold mb-2">{format(date, 'd')}</p>
                 {dayWorkout ? (
                   <div className="space-y-1">
-                    {statusIcons[dayWorkout.status]}
+                    <div className={`w-3 h-3 rounded-full mx-auto ${
+                      dayWorkout.status === 'completed' ? 'bg-green-500' :
+                      dayWorkout.status === 'skipped' ? 'bg-red-500' : 'bg-gray-500'
+                    }`} />
                     <p className="text-xs text-gray-300">
-                      {workoutTypeLabels[dayWorkout.workout_type] || dayWorkout.workout_type}
+                      {workoutLabels[dayWorkout.workout_type] || dayWorkout.workout_type}
                     </p>
                     {dayWorkout.target_distance_meters && (
                       <p className="text-xs text-gray-500">
@@ -102,7 +135,7 @@ export default function PlanPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-600">No workout</p>
+                  <p className="text-xs text-gray-600">Rest</p>
                 )}
               </div>
             );
@@ -113,42 +146,79 @@ export default function PlanPage() {
       {/* Detailed Workout List */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-white">Daily Workouts</h2>
-        {plan?.workouts?.map((workout) => (
-          <div
-            key={workout.id}
-            className="p-4 rounded-xl border border-gray-800 bg-gray-900/50 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className={`p-2 rounded-lg ${
-                workout.status === 'completed' ? 'bg-green-500/20' :
-                workout.status === 'skipped' ? 'bg-red-500/20' : 'bg-gray-500/20'
-              }`}>
-                {statusIcons[workout.status]}
+        {plan?.workouts?.map((workout) => {
+          const isExpanded = expandedWorkout === workout.id;
+          const paceRange = formatPaceRange(
+            workout.target_pace_min_sec_per_km,
+            workout.target_pace_max_sec_per_km
+          );
+
+          return (
+            <div
+              key={workout.id}
+              className={`rounded-xl border overflow-hidden transition-all ${
+                workout.status === 'completed' ? 'border-green-500/30 bg-green-500/5' :
+                workout.status === 'skipped' ? 'border-red-500/30 bg-red-500/5' :
+                'border-gray-800 bg-gray-900/50'
+              }`}
+            >
+              {/* Header - always visible */}
+              <div
+                className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-800/30"
+                onClick={() => setExpandedWorkout(isExpanded ? null : workout.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg ${
+                    workout.status === 'completed' ? 'bg-green-500/20' :
+                    workout.status === 'skipped' ? 'bg-red-500/20' : 'bg-gray-500/20'
+                  }`}>
+                    {workout.status === 'completed' && <CheckCircle className="w-5 h-5 text-green-400" />}
+                    {workout.status === 'skipped' && <XCircle className="w-5 h-5 text-red-400" />}
+                    {workout.status === 'scheduled' && <Circle className="w-5 h-5 text-gray-400" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">
+                      {format(new Date(workout.scheduled_date), 'EEEE, MMM d')}
+                    </p>
+                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${workoutColors[workout.workout_type] || 'bg-gray-500/20 text-gray-400 border-gray-500/50'}`}>
+                        {workoutLabels[workout.workout_type] || workout.workout_type}
+                      </span>
+                      {workout.target_distance_meters && (
+                        <span>{(workout.target_distance_meters / 1000).toFixed(1)} km</span>
+                      )}
+                      {paceRange && <span>{paceRange}</span>}
+                      {workout.target_hr_zone && <span>HR Zone {workout.target_hr_zone}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {workout.instructions && (
+                    isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-white">
-                  {format(new Date(workout.scheduled_date), 'EEEE, MMM d')}
-                </p>
-                <p className="text-gray-400">
-                  {workoutTypeLabels[workout.workout_type] || workout.workout_type}
-                </p>
-                {workout.purpose && (
-                  <p className="text-sm text-gray-500 mt-1">{workout.purpose}</p>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              {workout.target_distance_meters && (
-                <p className="text-white">
-                  {(workout.target_distance_meters / 1000).toFixed(1)} km
-                </p>
-              )}
-              {workout.target_hr_zone && (
-                <p className="text-sm text-gray-400">HR Zone {workout.target_hr_zone}</p>
+
+              {/* Expanded details */}
+              {isExpanded && workout.instructions && (
+                <div className="px-4 pb-4 border-t border-gray-800">
+                  <div className="mt-4 space-y-3">
+                    {workout.purpose && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-300 mb-1">Purpose</p>
+                        <p className="text-sm text-gray-400">{workout.purpose}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-300 mb-1">Instructions</p>
+                      <p className="text-sm text-gray-400">{workout.instructions}</p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
         {(!plan?.workouts || plan.workouts.length === 0) && (
           <p className="text-gray-400 text-center py-8">No workouts scheduled for this week</p>
         )}
